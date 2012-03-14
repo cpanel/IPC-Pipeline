@@ -1,0 +1,42 @@
+Abstract
+
+    IPC::Pipeline - Create a shell-like pipeline of many running commands
+
+Description
+
+    This module provides a calling convention similar to that of IPC::Open3 for
+    performing inter-process I/O, but allowing this to be done using multiple,
+    consecutively piped processes as specified by the user.  Three file handles
+    are returned: A file handle for writing to the first process in the
+    pipeline, a file handle for reading output from the last process in the
+    pipeline, and a file handle for reading errors from all children.  Each
+    process ID is returned and can be monitored with facilities such as
+    waitpid().
+
+    Please consult the POD-formatted documentation for a full synopsis,
+    examples, and caveats.
+
+Detailed Documentation
+
+    For further information, you may generate the IPC::Pipeline man page from
+    the included Plain Old Documentation, and read it, by performing the
+    following commands:
+
+        $ perl Makefile.PL
+        $ make manifypods
+        $ man blib/man3/IPC::Pipeline.3pm
+
+    This documentation is of course available via man(1) after installation in
+    the IPC::Pipeline(3pm) page.
+
+Further information
+
+    Licensing and copyright information may be found in these files, which
+    should be considered authoritative for the scope of this project.
+
+    * COPYRIGHT
+    * LICENSE
+
+Author
+
+    This module is written and maintained by wrath@cpan.org.
