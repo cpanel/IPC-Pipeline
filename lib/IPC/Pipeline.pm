@@ -1,3 +1,10 @@
+# Copyright (c) 2012, cPanel, Inc.
+# All rights reserved.
+# http://cpanel.net/
+#
+# This is free software; you can redistribute it and/or modify it under the same
+# terms as Perl itself.  See the LICENSE file for further details.
+
 package IPC::Pipeline;
 
 use strict;
@@ -6,22 +13,23 @@ use warnings;
 use POSIX ();
 
 BEGIN {
-    use Exporter    ();
-    use vars        qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
+    use Exporter ();
+    use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 
-    $VERSION        = '0.4';
-    @ISA            = ('Exporter');
-    @EXPORT         = ('pipeline');
-    @EXPORT_OK      = ();
-    %EXPORT_TAGS    = ();
+    $VERSION     = '0.5';
+    @ISA         = ('Exporter');
+    @EXPORT      = ('pipeline');
+    @EXPORT_OK   = ();
+    %EXPORT_TAGS = ();
 }
 
 sub exec_filter {
     my ($filter) = @_;
 
-    if (ref($filter) eq 'CODE') {
+    if ( ref($filter) eq 'CODE' ) {
         exit $filter->();
-    } elsif (ref($filter) eq 'ARRAY') {
+    }
+    elsif ( ref($filter) eq 'ARRAY' ) {
         exec(@$filter) or die("Cannot exec(): $!");
     }
 
@@ -29,7 +37,7 @@ sub exec_filter {
 }
 
 sub pipeline {
-    my @filters = @_[3..$#_];
+    my @filters = @_[ 3 .. $#_ ];
 
     return undef unless @filters;
 
@@ -46,33 +54,34 @@ sub pipeline {
     # Create the initial pipe for passing data into standard input to the first
     # filter passed.
     #
-    pipe my ($child_out, $in) or die('Cannot create a file handle pair for standard input piping');
+    pipe my ( $child_out, $in ) or die('Cannot create a file handle pair for standard input piping');
 
     #
     # Only create a standard error pipe if a standard error file handle glob
     # was passed in the 3rd argument position.
     #
-    my ($error_out, $error_in);
+    my ( $error_out, $error_in );
 
-    if (defined $_[2]) {
+    if ( defined $_[2] ) {
         pipe $error_out, $error_in or die('Cannot create a file handle pair for standard error piping');
     }
 
     my @pids;
 
     foreach my $filter (@filters) {
-        pipe my ($out, $child_in) or die('Cannot create a file handle pair for standard output piping');
+        pipe my ( $out, $child_in ) or die('Cannot create a file handle pair for standard output piping');
 
         my $pid = fork();
 
-        if (!defined $pid) {
+        if ( !defined $pid ) {
             die("Cannot fork(): $!");
-        } elsif ($pid == 0) {
-            open(STDIN, '<&', $child_out) or die('Cannot dup2() last output fd to current child stdin');
-            open(STDOUT, '>&', $child_in) or die('Cannot dup2() last input fd to current child stdout');
+        }
+        elsif ( $pid == 0 ) {
+            open( STDIN,  '<&', $child_out ) or die('Cannot dup2() last output fd to current child stdin');
+            open( STDOUT, '>&', $child_in )  or die('Cannot dup2() last input fd to current child stdout');
 
-            if (defined $_[2]) {
-                open(STDERR, '>&', $error_in) or die('Cannot dup2() error pipe input to current child stderr');
+            if ( defined $_[2] ) {
+                open( STDERR, '>&', $error_in ) or die('Cannot dup2() error pipe input to current child stderr');
             }
 
             exec_filter($filter);
@@ -98,28 +107,34 @@ sub pipeline {
     # be made to dup2() them as appropriate.
     #
 
-    if (!defined $_[0]) {
+    if ( !defined $_[0] ) {
         $_[0] = $in;
-    } elsif (ref $_[0] eq 'GLOB') {
-        open($_[0], '>&=', $in);
-    } else {
-        POSIX::dup2(fileno($in), $_[0]);
+    }
+    elsif ( ref $_[0] eq 'GLOB' ) {
+        open( $_[0], '>&=', $in );
+    }
+    else {
+        POSIX::dup2( fileno($in), $_[0] );
     }
 
-    if (!defined $_[1]) {
+    if ( !defined $_[1] ) {
         $_[1] = $child_out;
-    } elsif (ref $_[1] eq 'GLOB') {
-        open($_[1], '<&=', $child_out);
-    } else {
-        POSIX::dup2(fileno($child_out), $_[1]);
+    }
+    elsif ( ref $_[1] eq 'GLOB' ) {
+        open( $_[1], '<&=', $child_out );
+    }
+    else {
+        POSIX::dup2( fileno($child_out), $_[1] );
     }
 
-    if (!defined $_[2]) {
+    if ( !defined $_[2] ) {
         $_[2] = $error_out;
-    } elsif (ref $_[2] eq 'GLOB') {
-        open($_[2], '<&=', $error_out);
-    } else {
-        POSIX::dup2(fileno($error_out), $_[2]);
+    }
+    elsif ( ref $_[2] eq 'GLOB' ) {
+        open( $_[2], '<&=', $error_out );
+    }
+    else {
+        POSIX::dup2( fileno($error_out), $_[2] );
     }
 
     #
@@ -127,7 +142,7 @@ sub pipeline {
     # as they are specified in the commands provided.  Otherwise, return the
     # pid of the first child.
     #
-    return wantarray? @pids: $pids[0];
+    return wantarray ? @pids : $pids[0];
 }
 
 1;
@@ -318,5 +333,9 @@ It should be mentioned that mst's IO::Pipeline has very little in common with IP
 
 =head1 COPYRIGHT
 
-Copyright 2011, Erin Schönhals <wrath@cpan.org>.  Released under the terms of
-the MIT license.
+Copyright (c) 2012, cPanel, Inc.
+All rights reserved.
+http://cpanel.net/
+
+This is free software; you can redistribute it and/or modify it under the same
+terms as Perl itself.  See the LICENSE file for further details.
