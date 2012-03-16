@@ -1,13 +1,22 @@
 #! /usr/bin/perl
 
-use Test::More ('tests' => 6);
+# Copyright (c) 2012, cPanel, Inc.
+# All rights reserved.
+# http://cpanel.net/
+#
+# This is free software; you can redistribute it and/or modify it under the same
+# terms as Perl itself.  See the LICENSE file for further details.
+
+use Test::More ( 'tests' => 6 );
 
 use strict;
 use warnings;
 
 use IPC::Pipeline;
 
-my @pids = pipeline(my ($in, $out), undef,
+my @pids = pipeline(
+    my ( $in, $out ),
+    undef,
     sub {
         my $line = readline;
 
@@ -19,7 +28,7 @@ my @pids = pipeline(my ($in, $out), undef,
     },
 
     sub {
-        while (my $line = readline) {
+        while ( my $line = readline ) {
             chomp $line;
             $line =~ s/^/meow: /;
             print "$line\n";
@@ -35,16 +44,16 @@ print {$in} "foo\n";
 
 close $in;
 
-like(readline($out), qr/^meow: foo/, 'First line of output from CODE pipe is correct');
-like(readline($out), qr/^meow: bar/, 'Second line of output from CODE pipe is correct');
-like(readline($out), qr/^baz/,       'Third line of output from CODE pipe is correct');
+like( readline($out), qr/^meow: foo/, 'First line of output from CODE pipe is correct' );
+like( readline($out), qr/^meow: bar/, 'Second line of output from CODE pipe is correct' );
+like( readline($out), qr/^baz/,       'Third line of output from CODE pipe is correct' );
 
-ok(!readline($out), 'Correctly at end of file');
+ok( !readline($out), 'Correctly at end of file' );
 
 my @statuses = map {
-    waitpid($_, 0);
+    waitpid( $_, 0 );
     $? >> 8;
 } @pids;
 
-is(shift @statuses, 127, 'Status of first process is 127');
-is(shift @statuses, 63, 'Status of first process is 63');
+is( shift @statuses, 127, 'Status of first process is 127' );
+is( shift @statuses, 63,  'Status of first process is 63' );

@@ -1,3 +1,7 @@
+IPC::Pipeline 0.5
+
+    * Reassigned to the Perl artistic license under the cPanel copyright.
+
 IPC::Pipeline 0.4
 
     * Pare down superfluous bits of IPC::Pipeline
