@@ -18,7 +18,7 @@ my @pids = pipeline(
     my ( $in, $out ),
     undef,
     sub {
-        my $line = readline;
+        my $line = readline( \*STDIN );
 
         chomp $line;
         print "$line\n";
@@ -28,7 +28,7 @@ my @pids = pipeline(
     },
 
     sub {
-        while ( my $line = readline ) {
+        while ( my $line = readline( \*STDIN ) ) {
             chomp $line;
             $line =~ s/^/meow: /;
             print "$line\n";

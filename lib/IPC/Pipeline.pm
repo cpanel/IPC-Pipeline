@@ -1,11 +1,11 @@
+package IPC::Pipeline;
+
 # Copyright (c) 2012, cPanel, Inc.
 # All rights reserved.
 # http://cpanel.net/
 #
 # This is free software; you can redistribute it and/or modify it under the same
 # terms as Perl itself.  See the LICENSE file for further details.
-
-package IPC::Pipeline;
 
 use strict;
 use warnings;
@@ -14,13 +14,11 @@ use POSIX ();
 
 BEGIN {
     use Exporter ();
-    use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
+    use vars qw( $VERSION @ISA @EXPORT );
 
-    $VERSION     = '0.5';
-    @ISA         = ('Exporter');
-    @EXPORT      = ('pipeline');
-    @EXPORT_OK   = ();
-    %EXPORT_TAGS = ();
+    $VERSION = '0.6';
+    @ISA     = ('Exporter');
+    @EXPORT  = ('pipeline');
 }
 
 sub exec_filter {
@@ -39,7 +37,7 @@ sub exec_filter {
 sub pipeline {
     my @filters = @_[ 3 .. $#_ ];
 
-    return undef unless @filters;
+    die('Not enough arguments') unless @_ >= 4;
 
     #
     # Validate the filters and die early.
@@ -52,37 +50,26 @@ sub pipeline {
 
     #
     # Create the initial pipe for passing data into standard input to the first
-    # filter passed.
+    # filter passed.  Share a single pipe for standard error use for each
+    # process.
     #
-    pipe my ( $child_out, $in ) or die('Cannot create a file handle pair for standard input piping');
-
-    #
-    # Only create a standard error pipe if a standard error file handle glob
-    # was passed in the 3rd argument position.
-    #
-    my ( $error_out, $error_in );
-
-    if ( defined $_[2] ) {
-        pipe $error_out, $error_in or die('Cannot create a file handle pair for standard error piping');
-    }
+    pipe my ( $child_out, $in )       or die("Cannot create a file handle pair for standard input piping: $!");
+    pipe my ( $error_out, $error_in ) or die("Cannot create a file handle pair for standard error piping: $!");
 
     my @pids;
 
     foreach my $filter (@filters) {
-        pipe my ( $out, $child_in ) or die('Cannot create a file handle pair for standard output piping');
+        pipe my ( $out, $child_in ) or die("Cannot create a file handle pair for standard output piping: $!");
 
         my $pid = fork();
 
-        if ( !defined $pid ) {
+        if ( !defined($pid) ) {
             die("Cannot fork(): $!");
         }
         elsif ( $pid == 0 ) {
-            open( STDIN,  '<&', $child_out ) or die('Cannot dup2() last output fd to current child stdin');
-            open( STDOUT, '>&', $child_in )  or die('Cannot dup2() last input fd to current child stdout');
-
-            if ( defined $_[2] ) {
-                open( STDERR, '>&', $error_in ) or die('Cannot dup2() error pipe input to current child stderr');
-            }
+            open( STDIN,  '<&=' . fileno($child_out) ) or die("Cannot dup2() last output fd to current child stdin: $!");
+            open( STDOUT, '>&=' . fileno($child_in) )  or die("Cannot dup2() last input fd to current child stdout: $!");
+            open( STDERR, '>&=' . fileno($error_in) )  or die("Cannot dup2() error pipe input to current child stderr: $!");
 
             exec_filter($filter);
         }
@@ -110,8 +97,8 @@ sub pipeline {
     if ( !defined $_[0] ) {
         $_[0] = $in;
     }
-    elsif ( ref $_[0] eq 'GLOB' ) {
-        open( $_[0], '>&=', $in );
+    elsif ( ref( $_[0] ) eq 'GLOB' ) {
+        open( $_[0], '>&=' . fileno($in) );
     }
     else {
         POSIX::dup2( fileno($in), $_[0] );
@@ -120,8 +107,8 @@ sub pipeline {
     if ( !defined $_[1] ) {
         $_[1] = $child_out;
     }
-    elsif ( ref $_[1] eq 'GLOB' ) {
-        open( $_[1], '<&=', $child_out );
+    elsif ( ref( $_[1] ) eq 'GLOB' ) {
+        open( $_[1], '<&=' . fileno($child_out) );
     }
     else {
         POSIX::dup2( fileno($child_out), $_[1] );
@@ -130,19 +117,14 @@ sub pipeline {
     if ( !defined $_[2] ) {
         $_[2] = $error_out;
     }
-    elsif ( ref $_[2] eq 'GLOB' ) {
-        open( $_[2], '<&=', $error_out );
+    elsif ( ref( $_[2] ) eq 'GLOB' ) {
+        open( $_[2], '<&=' . fileno($error_out) );
     }
     else {
         POSIX::dup2( fileno($error_out), $_[2] );
     }
 
-    #
-    # If called in array context, return each subprocess ID in the same order
-    # as they are specified in the commands provided.  Otherwise, return the
-    # pid of the first child.
-    #
-    return wantarray ? @pids : $pids[0];
+    return wantarray ? @pids : \@pids;
 }
 
 1;
@@ -157,7 +139,7 @@ IPC::Pipeline - Create a shell-like pipeline of many running commands
 
     use IPC::Pipeline;
 
-    my @pids = pipeline(\*FIRST_CHLD_IN, \*LAST_CHLD_OUT, \*CHILDREN_ERR,
+    my @pids = pipeline( my $first_child_in, my $last_child_out, my $err,
         [qw(filter1 args)],
         sub { filter2(); return 0 },
         [qw(filter3 args)],
@@ -175,15 +157,15 @@ IPC::Pipeline - Create a shell-like pipeline of many running commands
 =head1 DESCRIPTION
 
 Similar in calling convention to IPC::Open3, pipeline() spawns N children,
-connecting the first child to the FIRST_CHLD_IN handle, the final child to
-LAST_CHLD_OUT, and each child to a shared standard error handle, CHILDREN_ERR.
+connecting the first child to the C<$first_child_in> handle, the final child to
+C<$last_child_out>, and each child to a shared standard error handle, C<$err>.
 Each subsequent filter specified causes a new process to be fork()ed.  Each
 process is linked to the last with a file descriptor pair created by pipe(),
 using dup2() to chain each process' standard input to the last standard output.
 
 =head2 FEATURES
 
-IPC::Pipeline accepts external commands to be executed in the form of ARRAY
+C<IPC::Pipeline> accepts external commands to be executed in the form of ARRAY
 references containing the command name and each argument, as well as CODE
 references that are executed within their own processes as well, each as
 independent parts of a pipeline.
@@ -210,16 +192,16 @@ positional parameters, then they will be duplicated onto the file handles
 allocated as a result of the process pipelining.  Otherwise, simple scalar
 assignment will be performed.
 
-Like IPC::Open3, pipeline() returns immediately after spawning the process
+Like L<IPC::Open3>, pipeline() returns immediately after spawning the process
 chain, though differing slightly in that the IDs of each process is returned
 in order of specification in a list when called in array context.  When called
-in scalar context, only the ID of the first child process spawned is returned.
+in scalar context, an ARRAY reference of the process IDs will be returned.
 
-Also like IPC::Open3, one may use select() to multiplex reading and writing to
-each of the handles returned by pipeline(), preferably with non-buffered
-sysread() and syswrite() calls.  Using this to handle reading standard output
-and error from the children is ideal, as blocking and buffering considerations
-are alleviated.
+Also like L<IPC::Open3>, one may use select() to multiplex reading and writing
+to each of the handles returned by pipeline(), preferably with non-buffered
+L<sysread()|perlfunc/sysread> and L<syswrite()|perlfunc/syswrite> calls.  Using
+this to handle reading standard output and error from the children is ideal, as
+blocking and buffering considerations are alleviated.
 
 =head2 CAVEATS
 
@@ -228,8 +210,11 @@ closed for any reason, the calling process inherits the kernel behavior of
 receiving a SIGPIPE, which requires the installation of a signal handler for
 appropriate recovery.
 
-Please be advised that any usage of numeric file descriptors will result in an
-implicit import of POSIX::dup2() at runtime.
+Unlike L<IPC::Open3>, C<IPC::Pipeline> will NOT redirect child process stderr to
+stdout if no file handle for stderr is specified.  As of version 0.6, the caller
+will always need to handle standard error, to prevent any children from
+blocking; it would make little sense to pass one process' standard error as an
+input to the next process.
 
 =head1 EXAMPLE ONE - OUTPUT ONLY
 
@@ -241,7 +226,9 @@ to multiplex the output and error streams.
 
     my @paths = qw(/some /random /locations);
 
-    my @pids = pipeline(my ($in, $out), undef,
+    open(my $err, '<', '/dev/null');
+
+    my @pids = pipeline(my ($in, $out), $err,
         [qw(tar pcf -), @paths],
         ['gzip']
     );
@@ -271,7 +258,9 @@ Unix-style shell.
 
     use IPC::Pipeline;
 
-    my @pids = pipeline(my ($in, $out), undef,
+    open(my $err, '<', '/dev/null');
+
+    my @pids = pipeline(my ($in, $out), $err,
         [qw(tr A-Ma-mN-Zn-z N-Zn-zA-Ma-m)],
         [qw(cut -d), ':', qw(-f 2)]
     );
@@ -305,7 +294,9 @@ references in the midst of a pipeline.
 
     use IPC::Pipeline;
 
-    my @pids = pipeline(my ($in, $out), undef,
+    open(my $err, '<', '/dev/null');
+
+    my @pids = pipeline(my ($in, $out), $err,
         sub { print 'cats'; return 0 },
         [qw(tr acst lbhe)]
     );
@@ -323,11 +314,12 @@ references in the midst of a pipeline.
 
 =over
 
-=item * IPC::Open3
+=item L<IPC::Open3>
 
-=item * IPC::Run, for a Swiss Army knife of Unix I/O gizmos
+=item L<IPC::Run>, for a Swiss Army knife of Unix I/O gizmos
 
-It should be mentioned that mst's IO::Pipeline has very little in common with IPC::Pipeline.
+It should be mentioned that mst's L<IO::Pipeline> has very little in common with
+C<IPC::Pipeline>.
 
 =back
 
