@@ -12,13 +12,12 @@ use warnings;
 
 WriteMakefile(
     'NAME'         => 'IPC::Pipeline',
-    'AUTHOR'       => 'Erin Schönhals erin@cpanel.net>',
+    'AUTHOR'       => 'Erin Schoenhals <erin@cpanel.net>',
     'ABSTRACT'     => 'IPC::Open3-like interface providing shell-style pipelines in Perl',
-    'LICENSE'      => 'mit',
+    'LICENSE'      => 'perl',
     'VERSION_FROM' => 'lib/IPC/Pipeline.pm',
 
-    'BUILD_REQUIRES' => {
-        'Test::More'      => 0,
-        'Test::Exception' => 0
-    }
+    'MIN_PERL_VERSION' => '5.8.0',
+
+    'BUILD_REQUIRES' => { 'Test::More' => 0 }
 );

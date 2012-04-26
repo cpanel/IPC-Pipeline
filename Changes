@@ -1,3 +1,22 @@
+IPC::Pipeline 0.6
+
+    * Ensure unit tests pass on Perl 5.8; declare a dependency on that version
+      of Perl in Makefile.PL
+
+    * Fix incorrect LICENSE declaration in Makefile.PL
+
+    * die() when standard input, output, or error arguments, even placeholders,
+      are not specified
+
+    * Always dup2() child process stderr fds to a standard error pipe, whether
+      or not an lvalue is passed for the stderr reader
+
+    * Will now return an ARRAY ref of pids in scalar context
+
+    * Remove dependency on Test::Exception in unit tests to allow for possible
+      future Perl 5.6 support, as Test::Exception does not build under those
+      circumstances currently
+
 IPC::Pipeline 0.5
 
     * Reassigned to the Perl artistic license under the cPanel copyright.

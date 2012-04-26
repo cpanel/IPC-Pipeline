@@ -20,8 +20,7 @@ my @commands = (
     [qw/cut -d : -f 2/]
 );
 
-my $err = Symbol::gensym();
-my @pids = pipeline( my ( $in, $out ), $err, @commands );
+my @pids = pipeline( my ( $in, $out, $err ), @commands );
 
 is( ref $in,  'GLOB', 'pipeline() opened standard input writer handle' );
 is( ref $out, 'GLOB', 'pipeline() opened standard output reader handle' );
@@ -51,7 +50,7 @@ is( ref $err, 'GLOB', 'pipeline() opened standard error reader handle' );
     );
 
     foreach ( keys %records ) {
-        ok( eval { print $in "$_\n"; }, "Able to write record '$_' to pipeline" );
+        ok( eval { print {$in} "$_\n"; }, "Able to write record '$_' to pipeline" );
     }
 
     ok(

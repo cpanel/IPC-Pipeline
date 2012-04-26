@@ -1,4 +1,4 @@
-CHANGES
+Changes
 COPYRIGHT
 lib/IPC/Pipeline.pm
 LICENSE
@@ -10,4 +10,4 @@ t/code.t
 t/handletypes.t
 t/invalid.t
 t/pipeline.t
-META.yml                                 Module meta-data (added by MakeMaker)
+t/stderr.t
