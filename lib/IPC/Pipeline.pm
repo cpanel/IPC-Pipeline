@@ -16,7 +16,7 @@ BEGIN {
     use Exporter ();
     use vars qw( $VERSION @ISA @EXPORT );
 
-    $VERSION = '0.6';
+    $VERSION = '0.7';
     @ISA     = ('Exporter');
     @EXPORT  = ('pipeline');
 }
@@ -156,16 +156,20 @@ IPC::Pipeline - Create a shell-like pipeline of many running commands
 
 =head1 DESCRIPTION
 
-Similar in calling convention to IPC::Open3, pipeline() spawns N children,
+B<IPC::Pipeline> exports a single function C<pipeline()>.
+
+Similar in calling convention to L<IPC::Open3>, C<pipeline()> spawns N children,
 connecting the first child to the C<$first_child_in> handle, the final child to
 C<$last_child_out>, and each child to a shared standard error handle, C<$err>.
-Each subsequent filter specified causes a new process to be fork()ed.  Each
-process is linked to the last with a file descriptor pair created by pipe(),
-using dup2() to chain each process' standard input to the last standard output.
+Each subsequent filter specified causes a new process to be C<fork()>ed.  Each
+process is linked to the last with a file descriptor pair created by C<pipe()>,
+using C<dup2()> to chain each process' standard input to the last standard output.
+
+B<IPC::Pipeline> does not work on B<MSWin32>, but it works on B<cygwin>.
 
 =head2 FEATURES
 
-C<IPC::Pipeline> accepts external commands to be executed in the form of ARRAY
+B<IPC::Pipeline> accepts external commands to be executed in the form of ARRAY
 references containing the command name and each argument, as well as CODE
 references that are executed within their own processes as well, each as
 independent parts of a pipeline.
@@ -192,13 +196,13 @@ positional parameters, then they will be duplicated onto the file handles
 allocated as a result of the process pipelining.  Otherwise, simple scalar
 assignment will be performed.
 
-Like L<IPC::Open3>, pipeline() returns immediately after spawning the process
+Like L<IPC::Open3>, C<pipeline()> returns immediately after spawning the process
 chain, though differing slightly in that the IDs of each process is returned
 in order of specification in a list when called in array context.  When called
 in scalar context, an ARRAY reference of the process IDs will be returned.
 
-Also like L<IPC::Open3>, one may use select() to multiplex reading and writing
-to each of the handles returned by pipeline(), preferably with non-buffered
+Also like L<IPC::Open3>, one may use C<select()> to multiplex reading and writing
+to each of the handles returned by C<pipeline()>, preferably with non-buffered
 L<sysread()|perlfunc/sysread> and L<syswrite()|perlfunc/syswrite> calls.  Using
 this to handle reading standard output and error from the children is ideal, as
 blocking and buffering considerations are alleviated.
@@ -207,10 +211,10 @@ blocking and buffering considerations are alleviated.
 
 If any child process dies prematurely, or any of the piped file handles are
 closed for any reason, the calling process inherits the kernel behavior of
-receiving a SIGPIPE, which requires the installation of a signal handler for
+receiving a C<SIGPIPE>, which requires the installation of a signal handler for
 appropriate recovery.
 
-Unlike L<IPC::Open3>, C<IPC::Pipeline> will NOT redirect child process stderr to
+Unlike L<IPC::Open3>, B<IPC::Pipeline> will NOT redirect child process stderr to
 stdout if no file handle for stderr is specified.  As of version 0.6, the caller
 will always need to handle standard error, to prevent any children from
 blocking; it would make little sense to pass one process' standard error as an
@@ -219,7 +223,7 @@ input to the next process.
 =head1 EXAMPLE ONE - OUTPUT ONLY
 
 The following example implements a quick and dirty, but relatively sane tar and
-gzip solution.  For proper error handling from any of the children, use select()
+gzip solution.  For proper error handling from any of the children, use C<select()>
 to multiplex the output and error streams.
 
     use IPC::Pipeline;
@@ -319,7 +323,7 @@ references in the midst of a pipeline.
 =item L<IPC::Run>, for a Swiss Army knife of Unix I/O gizmos
 
 It should be mentioned that mst's L<IO::Pipeline> has very little in common with
-C<IPC::Pipeline>.
+B<IPC::Pipeline>.
 
 =back
 
