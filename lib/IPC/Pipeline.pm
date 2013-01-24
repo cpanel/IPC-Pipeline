@@ -16,7 +16,7 @@ BEGIN {
     use Exporter ();
     use vars qw( $VERSION @ISA @EXPORT );
 
-    $VERSION = '0.7';
+    $VERSION = '0.8';
     @ISA     = ('Exporter');
     @EXPORT  = ('pipeline');
 }
