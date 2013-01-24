@@ -1,3 +1,7 @@
+IPC::Pipeline 0.8
+
+    * Resolves ticket https://rt.cpan.org/Ticket/Display.html?id=82824
+
 IPC::Pipeline 0.7
 
     * No functional changes

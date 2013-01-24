@@ -10,9 +10,8 @@ use 5.008001;
 use strict;
 use warnings;
 
-if ( $^O eq 'MSWin32' ) {
-    warn "IPC::Pipeline does not work with MSWin32, only cygwin; MSWin32 has no dup2()\n";
-    exit 0;
+if ( $^O =~ /^MSWin/ ) {
+    die('OS unsupported');
 }
 
 WriteMakefile(
