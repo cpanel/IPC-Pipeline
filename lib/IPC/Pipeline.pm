@@ -16,7 +16,7 @@ BEGIN {
     use Exporter ();
     use vars qw( $VERSION @ISA @EXPORT );
 
-    $VERSION = '0.8';
+    $VERSION = '0.9';
     @ISA     = ('Exporter');
     @EXPORT  = ('pipeline');
 }
@@ -93,9 +93,11 @@ sub pipeline {
     # file descriptors for existing file handles are passed, an attempt will
     # be made to dup2() them as appropriate.
     #
-
+    # The evals around the assignments are present so that we don't die when the
+    # argument passed in is undef.  Perl 5.19 and newer don't like that.
+    # [perl #7508, #109726]
     if ( !defined $_[0] ) {
-        $_[0] = $in;
+        eval { $_[0] = $in };
     }
     elsif ( ref( $_[0] ) eq 'GLOB' ) {
         open( $_[0], '>&=' . fileno($in) );
@@ -105,7 +107,7 @@ sub pipeline {
     }
 
     if ( !defined $_[1] ) {
-        $_[1] = $child_out;
+        eval { $_[1] = $child_out };
     }
     elsif ( ref( $_[1] ) eq 'GLOB' ) {
         open( $_[1], '<&=' . fileno($child_out) );
@@ -115,7 +117,7 @@ sub pipeline {
     }
 
     if ( !defined $_[2] ) {
-        $_[2] = $error_out;
+        eval { $_[2] = $error_out };
     }
     elsif ( ref( $_[2] ) eq 'GLOB' ) {
         open( $_[2], '<&=' . fileno($error_out) );
@@ -192,7 +194,7 @@ its own subprocess in the following way.
 =head2 BEHAVIOR
 
 If fileglobs or numeric file descriptors are passed in any of the three
-positional parameters, then they will be duplicated onto the file handles 
+positional parameters, then they will be duplicated onto the file handles
 allocated as a result of the process pipelining.  Otherwise, simple scalar
 assignment will be performed.
 

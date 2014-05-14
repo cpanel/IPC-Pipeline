@@ -1,3 +1,9 @@
+IPC::Pipeline 0.9
+
+    * Resolves ticket https://rt.cpan.org/Public/Bug/Display.html?id=88229
+
+    * Fix functionality with 5.19+.
+
 IPC::Pipeline 0.8
 
     * Resolves ticket https://rt.cpan.org/Ticket/Display.html?id=82824
